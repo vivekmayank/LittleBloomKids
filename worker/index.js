@@ -1,0 +1,5 @@
+import {accountAPI,sessionUser} from './account.js';
+import pdfs from './pdfs.js';
+export default {async fetch(request,env){try{const url=new URL(request.url);if(url.pathname.startsWith('/api/'))return await accountAPI(request,env.DB);
+if(url.pathname.startsWith('/downloads/')){if(!await sessionUser(request,env.DB))return new Response('Sign in to download this resource.',{status:401,headers:{'Cache-Control':'no-store'}});const id=url.pathname.slice(11).replace(/\.pdf$/,'');const base64=pdfs[id];if(!base64)return new Response('Not found',{status:404});const bytes=Uint8Array.from(atob(base64),c=>c.charCodeAt(0));return new Response(bytes,{headers:{'Content-Type':'application/pdf','Content-Disposition':`inline; filename="${id}.pdf"`,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});}
+return await env.ASSETS.fetch(request);}catch(e){console.error('Request failed',e.message);return new Response('This service is temporarily unavailable. Please try again.',{status:503,headers:{'Cache-Control':'no-store'}});}}};
